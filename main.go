@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/google/go-github/v26/github"
 	"golang.org/x/oauth2"
@@ -45,7 +46,10 @@ func run() int {
 }
 
 func doCommand() error {
-	client := newGitHubClient()
+	client, err := newGitHubClient()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	repo := &github.Repository{
 		Name:    github.String(flag.Arg(0)),
@@ -59,18 +63,44 @@ func doCommand() error {
 	return nil
 }
 
-func newGitHubClient() *github.Client {
+func newGitHubClient() (*github.Client, error) {
 	ctx := context.Background()
+	token, err := getAccessToken()
+	if err != nil {
+		return nil, err
+	}
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: getAccessToken()},
+		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	return github.NewClient(tc)
+	return github.NewClient(tc), nil
 }
 
-func getAccessToken() string {
+func getAccessToken() (string, error) {
 	if accessToken != "" {
-		return accessToken
+		return accessToken, nil
 	}
-	return os.Getenv("GITHUB_ACCESS_TOKEN")
+	if t := os.Getenv("GITHUB_ACCESS_TOKEN"); t != "" {
+		return t, nil
+	}
+	areporcPath := fmt.Sprintf("%s/.areporc", os.Getenv("HOME"))
+	if _, err := os.Stat(areporcPath); !os.IsNotExist(err) {
+		file, err := os.Open(areporcPath)
+		if err != nil {
+			return "", err
+		}
+		defer file.Close()
+		buf := make([]byte, 64)
+		for {
+			n, err := file.Read(buf)
+			if n == 0 {
+				break
+			}
+			if err != nil {
+				return "", err
+			}
+			return strings.TrimSuffix(string(buf[:n]), "\n"), nil
+		}
+	}
+	return "", nil
 }
