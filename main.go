@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 
@@ -9,15 +10,21 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var (
+	isPrivate bool
+)
+
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Printf("Invalid number of arguments (expected 2, got %d)\n", len(os.Args))
+	if len(os.Args) < 2 {
+		fmt.Println("Invalid number of arguments:", len(os.Args))
 		os.Exit(1)
 	}
 	os.Exit(run())
 }
 
 func run() int {
+	flag.BoolVar(&isPrivate, "private", false, "Create a new repository with private")
+	flag.Parse()
 	if err := doCommand(); err != nil {
 		fmt.Println("Failed to create a new repository: ", err)
 		return 1
@@ -29,8 +36,8 @@ func doCommand() error {
 	client := newGitHubClient()
 	ctx := context.Background()
 	repo := &github.Repository{
-		Name:    github.String(os.Args[1]),
-		Private: github.Bool(false),
+		Name:    github.String(flag.Arg(0)),
+		Private: github.Bool(isPrivate),
 	}
 	r, _, err := client.Repositories.Create(ctx, "", repo)
 	if err != nil {
