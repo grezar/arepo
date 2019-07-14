@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	isPrivate bool
+	isPrivate   bool
+	accessToken string
 )
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 
 func run() int {
 	flag.BoolVar(&isPrivate, "private", false, "Create a new repository with private")
+	flag.StringVar(&accessToken, "token", "", "GitHub access token")
 	flag.Parse()
 	if err := doCommand(); err != nil {
 		fmt.Println("Failed to create a new repository: ", err)
@@ -57,5 +59,8 @@ func newGitHubClient() *github.Client {
 }
 
 func getAccessToken() string {
+	if accessToken != "" {
+		return accessToken
+	}
 	return os.Getenv("GITHUB_ACCESS_TOKEN")
 }
