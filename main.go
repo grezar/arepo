@@ -10,9 +10,14 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const (
+	version = "0.1.0"
+)
+
 var (
-	isPrivate   bool
-	accessToken string
+	displayVersion bool
+	isPrivate      bool
+	accessToken    string
 )
 
 func main() {
@@ -24,9 +29,14 @@ func main() {
 }
 
 func run() int {
+	flag.BoolVar(&displayVersion, "version", false, "Display version")
 	flag.BoolVar(&isPrivate, "private", false, "Create a new repository with private")
 	flag.StringVar(&accessToken, "token", "", "GitHub access token")
 	flag.Parse()
+	if displayVersion {
+		fmt.Println(version)
+		return 0
+	}
 	if err := doCommand(); err != nil {
 		fmt.Println("Failed to create a new repository: ", err)
 		return 1
